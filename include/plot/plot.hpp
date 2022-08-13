@@ -1,15 +1,13 @@
+#include <GLFW/glfw3.h>
 #include <cairomm/context.h>
 #include <cairomm/matrix.h>
 #include <cairomm/surface.h>
 #include <cmath>
 #include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
-
-#ifdef CCM_PLOT_WITH_WINDOW
-#include <GLFW/glfw3.h>
-#include <map>
 #ifdef _WIN32
 #include <cairomm/win32_surface.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -17,7 +15,6 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include <GLFW/glfw3native.h>
-#endif
 
 namespace ccm
 {
@@ -102,10 +99,8 @@ private:
 
     bool m_grid{false};
     Float m_minx{INFINITY}, m_maxx{-INFINITY}, m_miny{INFINITY}, m_maxy{-INFINITY};
-    int m_margin[4] = {10, 10, 50, 50};
-    int m_padding = 10;
+    double m_margin[4] = {10, 10, 50, 50};
 
-#ifdef CCM_PLOT_WITH_WINDOW
     static void mouse_pressed_cb(GLFWwindow* window, int button, int action, int mods);
     static std::unordered_map<GLFWwindow*, Plot*>& window_to_instance();
     double m_pressedX, m_pressedY;
@@ -113,6 +108,5 @@ private:
     GLFWcursor* m_cursor;
     bool m_selection_square{false};
     bool m_one_time_render{true};
-#endif
 };
 } // namespace ccm

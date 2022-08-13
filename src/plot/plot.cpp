@@ -111,6 +111,7 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
     }
     // automatically detect bounds if not set
     if (m_minx == INFINITY)
+    {
         for (auto& pd : m_pd)
         {
             for (auto& x : pd.m_X)
@@ -119,7 +120,9 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
                 m_maxx = max(x, m_maxx);
             }
         }
+    }
     if (m_miny == INFINITY)
+    {
         for (auto& pd : m_pd)
         {
             for (auto& y : pd.m_Y)
@@ -128,6 +131,7 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
                 m_maxy = max(y, m_maxy);
             }
         }
+    }
     // white background
     if (with_ticks)
     {
@@ -151,40 +155,39 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
 
     Float x, y;
     ctx->save();
+    double buffsizex = width - m_margin[1] - m_margin[3],
+           buffsizey = height - m_margin[0] - m_margin[2];
+    auto buff_surf =
+      Cairo::ImageSurface::create(Cairo::Format::FORMAT_ARGB32, buffsizex, buffsizey);
+    auto buff_ctx = Cairo::Context::create(buff_surf);
     for (const auto& pd : m_pd)
     {
-        ctx->set_line_width(pd.m_linewidth);
-        ctx->set_source_rgba(pd.m_color.r, pd.m_color.g, pd.m_color.b, pd.m_color.a);
-        for (size_t i = 0; i < pd.m_X.size(); i++)
+        buff_ctx->set_line_width(pd.m_linewidth);
+        buff_ctx->set_source_rgba(pd.m_color.r, pd.m_color.g, pd.m_color.b, pd.m_color.a);
+        if (pd.m_marker != ' ')
+            for (size_t i = 0; i < pd.m_X.size(); i++)
+            {
+                if (pd.m_X[i] == NAN || pd.m_Y[i] == NAN)
+                    continue;
+                x = map(pd.m_X[i], m_minx, m_maxx, 0, buffsizex);
+                y = -map(pd.m_Y[i], m_miny, m_maxy, -buffsizey, 0);
+                render_marker(buff_ctx, x, y, pd.m_marker);
+            }
+        if (pd.m_line)
         {
-            x = map(clamp(pd.m_X[i], m_minx, m_maxx),
-                    m_minx,
-                    m_maxx,
-                    m_margin[3] + m_padding,
-                    this->width - (m_margin[1] + m_padding));
-            y = -map(clamp(pd.m_Y[i], m_miny, m_maxy),
-                     m_miny,
-                     m_maxy,
-                     -height + m_margin[2] + m_padding,
-                     -(m_margin[0] + m_padding));
-            render_marker(ctx, x, y, pd.m_marker);
+            for (size_t i = 0; i < pd.m_X.size(); i++)
+            {
+                if (pd.m_X[i] == NAN || pd.m_Y[i] == NAN)
+                    continue;
+                x = map(pd.m_X[i], m_minx, m_maxx, 0, buffsizex);
+                y = -map(pd.m_Y[i], m_miny, m_maxy, -buffsizey, 0);
+                buff_ctx->line_to(x, y);
+            }
+            buff_ctx->stroke();
         }
-        for (size_t i = 0; i < pd.m_X.size(); i++)
-        {
-            x = map(clamp(pd.m_X[i], m_minx, m_maxx),
-                    m_minx,
-                    m_maxx,
-                    m_margin[3] + m_padding,
-                    width - (m_margin[1] + m_padding));
-            y = -map(clamp(pd.m_Y[i], m_miny, m_maxy),
-                     m_miny,
-                     m_maxy,
-                     -height + m_margin[2] + m_padding,
-                     -(m_margin[0] + m_padding));
-            ctx->line_to(x, y);
-        }
-        ctx->stroke();
     }
+    ctx->set_source(buff_surf, m_margin[3], m_margin[0]);
+    ctx->paint();
     ctx->restore();
 }
 
@@ -213,18 +216,18 @@ void Plot::render_grid(Cairo::RefPtr<Cairo::Context> ctx)
     if (!m_grid)
         return;
     int n_ticks = 8;
-    Float stepsizey = (height - (2 * m_padding + m_margin[0] + m_margin[2])) / (n_ticks - 1);
-    Float stepsizex = (width - (2 * m_padding + m_margin[1] + m_margin[3])) / (n_ticks - 1);
+    Float stepsizey = (height - (m_margin[0] + m_margin[2])) / (n_ticks - 1);
+    Float stepsizex = (width - (m_margin[1] + m_margin[3])) / (n_ticks - 1);
     ctx->set_source_rgb(0, 0, 0);
     for (int i = 0; i < n_ticks; i++)
     {
         ctx->set_line_width(0.5);
-        ctx->move_to(m_margin[3], m_margin[0] + m_padding + i * stepsizey);
-        ctx->line_to(width - m_margin[1], m_margin[0] + m_padding + i * stepsizey);
+        ctx->move_to(m_margin[3], m_margin[0] + i * stepsizey);
+        ctx->line_to(width - m_margin[1], m_margin[0] + i * stepsizey);
         ctx->stroke();
 
-        ctx->move_to(m_margin[3] + m_padding + i * stepsizex, height - m_margin[2]);
-        ctx->line_to(m_margin[3] + m_padding + i * stepsizex, m_margin[0]);
+        ctx->move_to(m_margin[3] + i * stepsizex, height - m_margin[2]);
+        ctx->line_to(m_margin[3] + i * stepsizex, m_margin[0]);
         ctx->stroke();
     }
 }
@@ -237,35 +240,31 @@ void Plot::render_ticks(Cairo::RefPtr<Cairo::Context> ctx)
     ctx->select_font_face(
       "serif", Cairo::FontSlant::FONT_SLANT_NORMAL, Cairo::FontWeight::FONT_WEIGHT_NORMAL);
     ctx->set_font_size(12);
-    Float stepsizey = (height - (2 * m_padding + m_margin[0] + m_margin[2])) / (n_ticks - 1);
-    Float stepsizex = (width - (2 * m_padding + m_margin[1] + m_margin[3])) / (n_ticks - 1);
+    Float stepsizey = (height - (m_margin[0] + m_margin[2])) / (n_ticks - 1);
+    Float stepsizex = (width - (m_margin[1] + m_margin[3])) / (n_ticks - 1);
     Float mark;
     for (int i = 0; i < n_ticks; i++)
     {
         ctx->set_line_width(1.0);
-        ctx->move_to(m_margin[3], m_margin[0] + m_padding + i * stepsizey);
-        ctx->line_to(m_margin[3] - 10, m_margin[0] + m_padding + i * stepsizey);
+        ctx->move_to(m_margin[3], m_margin[0] + i * stepsizey);
+        ctx->line_to(m_margin[3] - 10, m_margin[0] + i * stepsizey);
         ctx->stroke();
 
-        ctx->move_to(m_margin[3] + m_padding + i * stepsizex, height - m_margin[2]);
-        ctx->line_to(m_margin[3] + m_padding + i * stepsizex, height - m_margin[2] + 10);
+        ctx->move_to(m_margin[3] + i * stepsizex, height - m_margin[2]);
+        ctx->line_to(m_margin[3] + i * stepsizex, height - m_margin[2] + 10);
         ctx->stroke();
 
-        ctx->move_to(m_margin[3] - 45, m_margin[0] + m_padding + i * stepsizey + 5);
-        mark = map(m_margin[0] + m_padding + (n_ticks - i - 1) * stepsizey,
-                   m_margin[0] + m_padding,
-                   height - (m_margin[2] + m_padding),
+        ctx->move_to(m_margin[3] - 45, m_margin[0] + i * stepsizey + 5);
+        mark = map(m_margin[0] + (n_ticks - i - 1) * stepsizey,
+                   m_margin[0],
+                   height - m_margin[2],
                    m_miny,
                    m_maxy);
         ctx->show_text(to_string_truncate(mark, 2));
 
-        ctx->move_to(m_margin[3] + m_padding + i * stepsizex - 10, height - m_margin[2] + 30);
-        ctx->show_text(to_string_truncate(map(m_margin[3] + m_padding + i * stepsizex,
-                                              m_margin[3] + m_padding,
-                                              width - (m_margin[1] + m_padding),
-                                              m_minx,
-                                              m_maxx),
-                                          2));
+        ctx->move_to(m_margin[3] + i * stepsizex - 10, height - m_margin[2] + 30);
+        ctx->show_text(to_string_truncate(
+          map(m_margin[3] + i * stepsizex, m_margin[3], width - m_margin[1], m_minx, m_maxx), 2));
     }
     ctx->begin_new_path();
     ctx->restore();

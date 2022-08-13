@@ -1,16 +1,9 @@
-#define CCM_PLOT_WITH_WINDOW
 #include "plot.hpp"
 
 #include <iostream>
 
 namespace ccm
 {
-#ifndef CCM_PLOT_WITH_WINDOW
-void Plot::show(const std::string& title)
-{
-    std::cout << "Not compiled with window support" << std::endl;
-}
-#else
 
 std::unordered_map<GLFWwindow*, Plot*>& Plot::window_to_instance()
 {
@@ -24,10 +17,15 @@ void Plot::mouse_pressed_cb(GLFWwindow* window, int button, int action, int mods
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         glfwGetCursorPos(window, &p->m_pressedX, &p->m_pressedY);
+        if (p->m_pressedX > p->width - p->m_margin[1] || p->m_pressedX < p->m_margin[3] ||
+            p->m_pressedY > p->height - p->m_margin[2] || p->m_pressedY < p->m_margin[0])
+            return;
         p->m_selection_square = true;
     }
     else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
     {
+        if (!p->m_selection_square)
+            return;
         glfwGetCursorPos(window, &p->m_posX, &p->m_posY);
         p->m_selection_square = false;
         double tmin, tmax;
@@ -35,32 +33,16 @@ void Plot::mouse_pressed_cb(GLFWwindow* window, int button, int action, int mods
             tmin = p->m_posX, tmax = p->m_pressedX;
         else
             tmin = p->m_pressedX, tmax = p->m_posX;
-        tmin = map(tmin,
-                   p->m_margin[3] + p->m_padding,
-                   p->width - (p->m_margin[1] + p->m_padding),
-                   p->m_minx,
-                   p->m_maxx);
-        tmax = map(tmax,
-                   p->m_margin[3] + p->m_padding,
-                   p->width - (p->m_margin[1] + p->m_padding),
-                   p->m_minx,
-                   p->m_maxx);
+        tmin = map(tmin, p->m_margin[3], p->width - (p->m_margin[1]), p->m_minx, p->m_maxx);
+        tmax = map(tmax, p->m_margin[3], p->width - (p->m_margin[1]), p->m_minx, p->m_maxx);
         p->m_minx = tmin;
         p->m_maxx = tmax;
         if (p->m_posY > p->m_pressedY)
             tmin = p->m_posY, tmax = p->m_pressedY;
         else
             tmin = p->m_pressedY, tmax = p->m_posY;
-        tmin = map(-tmin,
-                   -p->height + (p->m_margin[2] + p->m_padding),
-                   -(p->m_margin[0] + p->m_padding),
-                   p->m_miny,
-                   p->m_maxy);
-        tmax = map(-tmax,
-                   -p->height + (p->m_margin[2] + p->m_padding),
-                   -(p->m_margin[0] + p->m_padding),
-                   p->m_miny,
-                   p->m_maxy);
+        tmin = map(-tmin, -p->height + (p->m_margin[2]), -(p->m_margin[0]), p->m_miny, p->m_maxy);
+        tmax = map(-tmax, -p->height + (p->m_margin[2]), -(p->m_margin[0]), p->m_miny, p->m_maxy);
         p->m_miny = tmin;
         p->m_maxy = tmax;
         p->m_one_time_render = true;
@@ -118,6 +100,8 @@ void Plot::show(const std::string& title)
         glfwGetCursorPos(window, &m_posX, &m_posY);
         if (m_selection_square)
         {
+            m_posX = clamp(m_posX, m_margin[3], width - m_margin[1]);
+            m_posY = clamp(m_posY, m_margin[0], height - m_margin[2]);
             render_to(ctx, false);
             ctx->save();
             ctx->set_source_rgba(0, 0, 0, 0.5);
@@ -140,5 +124,4 @@ void Plot::show(const std::string& title)
     glfwDestroyWindow(window);
     glfwTerminate();
 }
-#endif
 } // namespace ccm
