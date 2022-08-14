@@ -15,6 +15,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif __linux__
 #define GLFW_EXPOSE_NATIVE_X11
+#include <cairomm/xlib_surface.h>
 #endif
 #include <GLFW/glfw3native.h>
 
