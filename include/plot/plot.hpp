@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <array>
 #include <cairomm/context.h>
 #include <cairomm/matrix.h>
 #include <cairomm/surface.h>
@@ -6,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <stack>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -108,5 +110,6 @@ protected:
     GLFWcursor* m_cursor;
     bool m_selection_square{false};
     bool m_one_time_render{true};
+    std::stack<std::array<Float, 4>> m_zoom_changes;
 };
 } // namespace ccm

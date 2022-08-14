@@ -27,6 +27,7 @@ void Plot::mouse_pressed_cb(GLFWwindow* window, int button, int action, int mods
         if (!p->m_selection_square)
             return;
         glfwGetCursorPos(window, &p->m_posX, &p->m_posY);
+        p->m_zoom_changes.push({p->m_minx, p->m_maxx, p->m_miny, p->m_maxy});
         p->m_selection_square = false;
         double tmin, tmax;
         if (p->m_posX < p->m_pressedX)
@@ -46,6 +47,16 @@ void Plot::mouse_pressed_cb(GLFWwindow* window, int button, int action, int mods
         p->m_miny = tmin;
         p->m_maxy = tmax;
         p->m_one_time_render = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+    {
+        p->m_selection_square = false;
+        if (p->m_zoom_changes.empty())
+            return;
+        p->m_one_time_render = true;
+        p->m_minx = p->m_zoom_changes.top()[0], p->m_maxx = p->m_zoom_changes.top()[1];
+        p->m_miny = p->m_zoom_changes.top()[2], p->m_maxy = p->m_zoom_changes.top()[3];
+        p->m_zoom_changes.pop();
     }
 }
 

@@ -31,3 +31,5 @@ or
 `$ plot "x^2" -10,10`
 
 `$ plot "1/(x+1)" -10,10 -100,100`
+
+You can then zoom in using right click and zoom back out using left click
