@@ -115,7 +115,6 @@ void Plot::show(const std::string& title)
         {
             m_posX = clamp(m_posX, m_margin[3], width - m_margin[1]);
             m_posY = clamp(m_posY, m_margin[0], height - m_margin[2]);
-            render_to(ctx, false);
             ctx->save();
             ctx->set_source_rgba(0, 0, 0, 0.5);
             ctx->move_to(m_pressedX, m_pressedY);
