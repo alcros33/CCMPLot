@@ -6,7 +6,7 @@ SRC_DIRS := ./src
 INC_DIRS := ./include/plot 
 
 CPPFLAGS := -std=c++17 -Wall -Wextra $(shell pkg-config --cflags cairomm-1.0)
-LDFLAGS := $(shell pkg-config --libs cairomm-1.0) $(shell pkg-config --libs glfw3) 
+LDFLAGS := $(shell pkg-config --libs cairomm-1.0) $(shell pkg-config --libs glfw3)  $(shell pkg-config --libs muparser)
 
 # Find all the C and C++ files we want to compile'
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')

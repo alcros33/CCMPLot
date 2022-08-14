@@ -11,7 +11,7 @@
 #ifdef _WIN32
 #include <cairomm/win32_surface.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(__linux__)
+#elif __linux__
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include <GLFW/glfw3native.h>
@@ -51,7 +51,7 @@ public:
     Plot& plot(Func F,
                Float minx,
                Float maxx,
-               int points,
+               int points = 10000,
                Color color = {0, 0, 1, 1},
                char marker = ' ',
                Float linewidth = 2.0);
@@ -63,7 +63,7 @@ public:
     void show(const std::string& title);
     int width, height;
 
-private:
+protected:
     void render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks);
     void render_grid(Cairo::RefPtr<Cairo::Context> ctx);
     void render_marker(Cairo::RefPtr<Cairo::Context> ctx, Float x, Float y, char marker);

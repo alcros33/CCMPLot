@@ -72,7 +72,7 @@ void Plot::show(const std::string& title)
 #ifdef _WIN32
     auto win32_window = glfwGetWin32Window(window);
     auto surface = Cairo::Win32Surface::create(GetDC(win32_window));
-#elif defined(__linux__)
+#elif __linux__
     Display* x11_display = glfwGetX11Display();
     Window x11_window = glfwGetX11Window(window);
     Visual* vis = DefaultVisual(x11_display, DefaultScreen(x11_display));
@@ -90,6 +90,8 @@ void Plot::show(const std::string& title)
             width = newwitdh, height = newheight;
 #ifdef _WIN32
             surface = Cairo::Win32Surface::create(GetDC(win32_window));
+#elif __linux__
+            surface->set_size(width, height);
 #endif
             ctx = Cairo::Context::create(surface);
             m_one_time_render = true;
