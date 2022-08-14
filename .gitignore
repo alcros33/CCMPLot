@@ -36,3 +36,6 @@
 
 # releases
 *.zip
+
+# Target
+build/*
