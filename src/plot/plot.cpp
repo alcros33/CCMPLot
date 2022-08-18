@@ -95,6 +95,19 @@ Plot& Plot::setYLim(Float miny, Float maxy)
     return *this;
 }
 
+namespace inner
+{
+    bool is_invalid_value(Float x) { return x == NAN || x == INFINITY || x == -INFINITY; }
+    bool asymptote_case(const Vector& Y, int idx, Float size)
+    {
+        if (idx == 0)
+            return false;
+        if (Y[idx] * Y[idx - 1] > 0)
+            return false;
+        return abs(Y[idx] - Y[idx - 1]) > size;
+    }
+} // namespace inner
+
 void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
 {
     // generate points for functions for the first time
@@ -160,6 +173,7 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
     auto buff_surf =
       Cairo::ImageSurface::create(Cairo::Format::FORMAT_ARGB32, buffsizex, buffsizey);
     auto buff_ctx = Cairo::Context::create(buff_surf);
+    Float sizey = m_maxy - m_miny;
     for (const auto& pd : m_pd)
     {
         buff_ctx->set_line_width(pd.m_linewidth);
@@ -167,7 +181,7 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
         if (pd.m_marker != ' ')
             for (size_t i = 0; i < pd.m_X.size(); i++)
             {
-                if (pd.m_X[i] == NAN || pd.m_Y[i] == NAN)
+                if (inner::is_invalid_value(pd.m_X[i]) || inner::is_invalid_value(pd.m_Y[i]))
                     continue;
                 x = map(pd.m_X[i], m_minx, m_maxx, 0, buffsizex);
                 y = -map(pd.m_Y[i], m_miny, m_maxy, -buffsizey, 0);
@@ -177,8 +191,12 @@ void Plot::render_to(Cairo::RefPtr<Cairo::Context> ctx, bool with_ticks)
         {
             for (size_t i = 0; i < pd.m_X.size(); i++)
             {
-                if (pd.m_X[i] == NAN || pd.m_Y[i] == NAN)
+                if (inner::is_invalid_value(pd.m_X[i]) || inner::is_invalid_value(pd.m_Y[i]) ||
+                    inner::asymptote_case(pd.m_Y, i, sizey))
+                {
+                    buff_ctx->stroke();
                     continue;
+                }
                 x = map(pd.m_X[i], m_minx, m_maxx, 0, buffsizex);
                 y = -map(pd.m_Y[i], m_miny, m_maxy, -buffsizey, 0);
                 buff_ctx->line_to(x, y);
