@@ -3,7 +3,7 @@ TARGET_EXEC := plot
 BUILD_DIR := ./build
 SRC_DIRS := ./src
 INC_DIRS := ./include ./include/plot
-CPPFLAGS := -std=c++17 -Wall -Wextra
+CXXFLAGS := -std=c++17 -Wall -Wextra
 LIBS := cairomm-1.0 glfw3 muparser
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
@@ -14,16 +14,16 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) $(shell pkg-config --cflags $(LIBS))
 
 LDFLAGS := $(shell pkg-config --libs $(LIBS))
 
-CPPFLAGS += $(INC_FLAGS) $(LDFLAGS)
+CXXFLAGS += $(INC_FLAGS) $(LDFLAGS)
 
 .PHONY: debug release clean
 
 debug: CXXFLAGS += -DDEBUG -g -O0
-debug: CCFLAGS += -DDEBUG -g -O0
+debug: CFLAGS += -DDEBUG -g -O0
 debug: $(BUILD_DIR)/$(TARGET_EXEC)
 
 release: CXXFLAGS += -DNDEBUG -O2 -s
-release: CCFLAGS += -DNDEBUG -O2 -s
+release: CFLAGS += -DNDEBUG -O2 -s
 release: $(BUILD_DIR)/$(TARGET_EXEC)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
